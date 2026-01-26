@@ -47,6 +47,9 @@ function QuestionForm({ room, roomCode, userId }) {
 
   // Get current pool count
   useEffect(() => {
+    // Reset pool count immediately when poolType changes to prevent stale data
+    setPoolCount(0);
+
     if (room.currentPlayerId) {
       getPoolCount(roomCode, room.currentPlayerId, poolType).then(setPoolCount);
     }
