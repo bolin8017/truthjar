@@ -1,0 +1,20 @@
+{
+  "rules": {
+    "rooms": {
+      "$roomCode": {
+        ".read": true,
+        ".write": "!data.exists() || data.child('hostId').val() == auth.uid",
+
+        "players": {
+          "$playerId": {
+            ".write": "$playerId == auth.uid || data.parent().parent().child('hostId').val() == auth.uid"
+          }
+        },
+
+        "currentRound": {
+          ".write": "data.parent().child('players').child(auth.uid).exists()"
+        }
+      }
+    }
+  }
+}
