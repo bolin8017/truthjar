@@ -8,7 +8,10 @@ import {
   CardContent,
   Stack,
   Chip,
+  Alert,
 } from '@mui/material';
+import { ref, update } from 'firebase/database';
+import { db } from '../services/firebase';
 import {
   submitQuestion,
   skipQuestion,
@@ -27,12 +30,20 @@ function QuestionForm({ room, roomCode, userId }) {
   const currentPlayer = room.players[room.currentPlayerId];
   const choiceLabel = room.currentChoice === 'truth' ? '真心話' : '大冒險';
   const poolType = room.currentChoice === 'truth' ? 'truthPool' : 'darePool';
+  const forceSubmit = room.currentRound?.forceSubmit;
 
   // Check if current user already submitted
   useEffect(() => {
     const submittedBy = room.currentRound?.submittedBy || {};
     setSubmitted(!!submittedBy[userId]);
   }, [room.currentRound?.submittedBy, userId]);
+
+  // Reset submitted state when forceSubmit is triggered
+  useEffect(() => {
+    if (forceSubmit) {
+      setSubmitted(false);
+    }
+  }, [forceSubmit]);
 
   // Get current pool count
   useEffect(() => {
@@ -41,7 +52,7 @@ function QuestionForm({ room, roomCode, userId }) {
     }
   }, [roomCode, room.currentPlayerId, poolType, room.currentRound?.submittedBy]);
 
-  // Check if all submitted and proceed
+  // Check if all submitted and proceed (or force resubmit if pool empty)
   useEffect(() => {
     const checkAndProceed = async () => {
       const allSubmitted = await checkAllSubmitted(roomCode);
@@ -49,6 +60,13 @@ function QuestionForm({ room, roomCode, userId }) {
         const count = await getPoolCount(roomCode, room.currentPlayerId, poolType);
         if (count > 0) {
           await proceedToDrawQuestion(roomCode);
+        } else {
+          // Pool is empty, need to force resubmit
+          // Reset submittedBy to force another round
+          await update(ref(db, `rooms/${roomCode}/currentRound`), {
+            submittedBy: {},
+            forceSubmit: true,
+          });
         }
       }
     };
@@ -124,6 +142,11 @@ function QuestionForm({ room, roomCode, userId }) {
         <Box sx={{ textAlign: 'center', mb: 2 }}>
           <Chip label={choiceLabel} color={room.currentChoice === 'truth' ? 'primary' : 'secondary'} />
         </Box>
+        {forceSubmit && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            題庫是空的！至少需要一題才能繼續。這次不能 Skip！
+          </Alert>
+        )}
         <Typography variant="h6" gutterBottom>
           給 {currentPlayer?.name} 出題
         </Typography>
@@ -154,7 +177,7 @@ function QuestionForm({ room, roomCode, userId }) {
             variant="outlined"
             fullWidth
             onClick={handleSkip}
-            disabled={loading}
+            disabled={loading || forceSubmit}
           >
             Skip
           </Button>
