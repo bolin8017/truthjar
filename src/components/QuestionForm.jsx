@@ -69,20 +69,25 @@ function QuestionForm({ room, roomCode, userId }) {
         } else {
           // Pool is empty, need to force resubmit
           console.log('[QuestionForm] Pool is empty, forcing resubmit');
-          // Reset submittedBy to force another round
-          await update(ref(db, `rooms/${roomCode}/currentRound`), {
-            submittedBy: {},
-            forceSubmit: true,
-          });
+          // Check if this is already in forceSubmit state to prevent infinite loop
+          if (!forceSubmit) {
+            // Reset submittedBy to force another round
+            await update(ref(db, `rooms/${roomCode}/currentRound`), {
+              submittedBy: {},
+              forceSubmit: true,
+            });
+          }
+          // If forceSubmit is already true and pool still empty, we're waiting for submissions
+          // The UI will show the warning and disable Skip button
         }
       }
     };
 
-    console.log('[QuestionForm] useEffect triggered - isCurrentPlayer:', isCurrentPlayer, 'submitted:', submitted);
+    console.log('[QuestionForm] useEffect triggered - isCurrentPlayer:', isCurrentPlayer, 'submitted:', submitted, 'forceSubmit:', forceSubmit);
     if (!isCurrentPlayer && submitted) {
       checkAndProceed();
     }
-  }, [submitted, roomCode, room.currentPlayerId, poolType, isCurrentPlayer]);
+  }, [submitted, roomCode, room.currentPlayerId, poolType, isCurrentPlayer, forceSubmit]);
 
   const handleSubmit = async () => {
     if (!content.trim()) return;
