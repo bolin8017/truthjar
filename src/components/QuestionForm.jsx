@@ -55,13 +55,20 @@ function QuestionForm({ room, roomCode, userId }) {
   // Check if all submitted and proceed (or force resubmit if pool empty)
   useEffect(() => {
     const checkAndProceed = async () => {
+      console.log('[QuestionForm] Checking if all submitted...');
       const allSubmitted = await checkAllSubmitted(roomCode);
+      console.log('[QuestionForm] All submitted:', allSubmitted);
+
       if (allSubmitted) {
         const count = await getPoolCount(roomCode, room.currentPlayerId, poolType);
+        console.log('[QuestionForm] Pool count:', count);
+
         if (count > 0) {
+          console.log('[QuestionForm] Proceeding to draw question');
           await proceedToDrawQuestion(roomCode);
         } else {
           // Pool is empty, need to force resubmit
+          console.log('[QuestionForm] Pool is empty, forcing resubmit');
           // Reset submittedBy to force another round
           await update(ref(db, `rooms/${roomCode}/currentRound`), {
             submittedBy: {},
@@ -71,6 +78,7 @@ function QuestionForm({ room, roomCode, userId }) {
       }
     };
 
+    console.log('[QuestionForm] useEffect triggered - isCurrentPlayer:', isCurrentPlayer, 'submitted:', submitted);
     if (!isCurrentPlayer && submitted) {
       checkAndProceed();
     }

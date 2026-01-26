@@ -8,12 +8,16 @@ function ChoiceSelector({ room, roomCode, userId }) {
   const isCurrentPlayer = room.currentPlayerId === userId;
   const currentPlayer = room.players[room.currentPlayerId];
 
+  console.log('[ChoiceSelector] Rendering - Phase:', room.currentPhase, 'isCurrentPlayer:', isCurrentPlayer);
+
   const handleChoice = async (choice) => {
+    console.log('[ChoiceSelector] Making choice:', choice);
     setLoading(true);
     try {
       await makeChoice(roomCode, choice);
+      console.log('[ChoiceSelector] Choice made successfully');
     } catch (err) {
-      console.error(err);
+      console.error('[ChoiceSelector] Error making choice:', err);
     }
     setLoading(false);
   };

@@ -120,6 +120,8 @@ export async function makeChoice(roomCode, choice) {
   await update(ref(db, `rooms/${roomCode}`), {
     currentChoice: choice,
     currentPhase: 'submitting',
+    'currentRound/submittedBy': {},
+    'currentRound/forceSubmit': false,
   });
 }
 

@@ -78,17 +78,24 @@ function RoomPage() {
   const isHost = room.hostId === userId;
 
   const renderGamePhase = () => {
+    console.log('[RoomPage] Current phase:', room.currentPhase, 'Current player:', room.currentPlayerId, 'My userId:', userId);
+
     switch (room.currentPhase) {
       case 'drawing':
+        console.log('[RoomPage] Rendering PlayerDrawing');
         return <PlayerDrawing room={room} roomCode={roomCode} userId={userId} />;
       case 'choosing':
+        console.log('[RoomPage] Rendering ChoiceSelector');
         return <ChoiceSelector room={room} roomCode={roomCode} userId={userId} />;
       case 'submitting':
+        console.log('[RoomPage] Rendering QuestionForm');
         return <QuestionForm room={room} roomCode={roomCode} userId={userId} />;
       case 'drawingQuestion':
       case 'executing':
+        console.log('[RoomPage] Rendering QuestionDrawing');
         return <QuestionDrawing room={room} roomCode={roomCode} userId={userId} />;
       default:
+        console.log('[RoomPage] Unknown phase, rendering nothing');
         return null;
     }
   };
