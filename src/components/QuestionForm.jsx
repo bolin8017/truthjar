@@ -1,0 +1,167 @@
+import { useState, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Card,
+  CardContent,
+  Stack,
+  Chip,
+} from '@mui/material';
+import {
+  submitQuestion,
+  skipQuestion,
+  checkAllSubmitted,
+  getPoolCount,
+  proceedToDrawQuestion,
+} from '../services/roomService';
+
+function QuestionForm({ room, roomCode, userId }) {
+  const [content, setContent] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [poolCount, setPoolCount] = useState(0);
+
+  const isCurrentPlayer = room.currentPlayerId === userId;
+  const currentPlayer = room.players[room.currentPlayerId];
+  const choiceLabel = room.currentChoice === 'truth' ? '真心話' : '大冒險';
+  const poolType = room.currentChoice === 'truth' ? 'truthPool' : 'darePool';
+
+  // Check if current user already submitted
+  useEffect(() => {
+    const submittedBy = room.currentRound?.submittedBy || {};
+    setSubmitted(!!submittedBy[userId]);
+  }, [room.currentRound?.submittedBy, userId]);
+
+  // Get current pool count
+  useEffect(() => {
+    if (room.currentPlayerId) {
+      getPoolCount(roomCode, room.currentPlayerId, poolType).then(setPoolCount);
+    }
+  }, [roomCode, room.currentPlayerId, poolType, room.currentRound?.submittedBy]);
+
+  // Check if all submitted and proceed
+  useEffect(() => {
+    const checkAndProceed = async () => {
+      const allSubmitted = await checkAllSubmitted(roomCode);
+      if (allSubmitted) {
+        const count = await getPoolCount(roomCode, room.currentPlayerId, poolType);
+        if (count > 0) {
+          await proceedToDrawQuestion(roomCode);
+        }
+      }
+    };
+
+    if (!isCurrentPlayer && submitted) {
+      checkAndProceed();
+    }
+  }, [submitted, roomCode, room.currentPlayerId, poolType, isCurrentPlayer]);
+
+  const handleSubmit = async () => {
+    if (!content.trim()) return;
+    setLoading(true);
+    try {
+      await submitQuestion(roomCode, content.trim());
+      setContent('');
+      setSubmitted(true);
+    } catch (err) {
+      console.error(err);
+    }
+    setLoading(false);
+  };
+
+  const handleSkip = async () => {
+    setLoading(true);
+    try {
+      await skipQuestion(roomCode);
+      setSubmitted(true);
+    } catch (err) {
+      console.error(err);
+    }
+    setLoading(false);
+  };
+
+  // Current player waits
+  if (isCurrentPlayer) {
+    return (
+      <Card sx={{ width: '100%', maxWidth: 400, textAlign: 'center' }}>
+        <CardContent>
+          <Chip label={choiceLabel} color={room.currentChoice === 'truth' ? 'primary' : 'secondary'} sx={{ mb: 2 }} />
+          <Typography variant="h5" gutterBottom>
+            等待出題中...
+          </Typography>
+          <Typography color="text.secondary">
+            其他玩家正在為你準備題目
+          </Typography>
+          <Typography variant="h4" sx={{ mt: 2 }}>
+            目前題庫: {poolCount} 題
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Already submitted
+  if (submitted) {
+    return (
+      <Card sx={{ width: '100%', maxWidth: 400, textAlign: 'center' }}>
+        <CardContent>
+          <Typography variant="h6" color="success.main" gutterBottom>
+            已提交！
+          </Typography>
+          <Typography color="text.secondary">
+            等待其他玩家...
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card sx={{ width: '100%', maxWidth: 400 }}>
+      <CardContent>
+        <Box sx={{ textAlign: 'center', mb: 2 }}>
+          <Chip label={choiceLabel} color={room.currentChoice === 'truth' ? 'primary' : 'secondary'} />
+        </Box>
+        <Typography variant="h6" gutterBottom>
+          給 {currentPlayer?.name} 出題
+        </Typography>
+        <TextField
+          fullWidth
+          multiline
+          rows={3}
+          placeholder={
+            room.currentChoice === 'truth'
+              ? '例如：你最尷尬的經驗是什麼？'
+              : '例如：打電話給最近聯絡人說我愛你'
+          }
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          disabled={loading}
+          sx={{ mb: 2 }}
+        />
+        <Stack direction="row" spacing={2}>
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleSubmit}
+            disabled={loading || !content.trim()}
+          >
+            提交
+          </Button>
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={handleSkip}
+            disabled={loading}
+          >
+            Skip
+          </Button>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default QuestionForm;
