@@ -103,6 +103,12 @@ function QuestionForm({ room, roomCode, userId }) {
   };
 
   const handleSkip = async () => {
+    // Check if skip is allowed (pool must have items)
+    if (poolCount === 0) {
+      console.log('[QuestionForm] Cannot skip - pool is empty');
+      return;
+    }
+
     setLoading(true);
     try {
       await skipQuestion(roomCode);
@@ -155,7 +161,7 @@ function QuestionForm({ room, roomCode, userId }) {
         <Box sx={{ textAlign: 'center', mb: 2 }}>
           <Chip label={choiceLabel} color={room.currentChoice === 'truth' ? 'primary' : 'secondary'} />
         </Box>
-        {forceSubmit && (
+        {poolCount === 0 && (
           <Alert severity="warning" sx={{ mb: 2 }}>
             題庫是空的！至少需要一題才能繼續。這次不能 Skip！
           </Alert>
@@ -190,7 +196,7 @@ function QuestionForm({ room, roomCode, userId }) {
             variant="outlined"
             fullWidth
             onClick={handleSkip}
-            disabled={loading || forceSubmit}
+            disabled={loading || poolCount === 0}
           >
             Skip
           </Button>
