@@ -8,6 +8,7 @@ import ChoiceSelector from '../components/ChoiceSelector';
 import QuestionForm from '../components/QuestionForm';
 import QuestionDrawing from '../components/QuestionDrawing';
 import PlayerList from '../components/PlayerList';
+import QuickJoinForm from '../components/QuickJoinForm';
 import { resetGame } from '../services/roomService';
 
 function RoomPage() {
@@ -55,24 +56,8 @@ function RoomPage() {
   // Check if user is in the room
   const isInRoom = room.players && room.players[userId];
   if (!isInRoom) {
-    return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          p: 3,
-          gap: 2,
-        }}
-      >
-        <Alert severity="warning">你不在這個房間中</Alert>
-        <Button variant="contained" onClick={() => navigate('/')}>
-          回首頁加入房間
-        </Button>
-      </Box>
-    );
+    // Show quick join form for users who scanned QR code
+    return <QuickJoinForm roomCode={roomCode} />;
   }
 
   const isHost = room.hostId === userId;
