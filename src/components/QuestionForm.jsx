@@ -9,6 +9,11 @@ import {
   Stack,
   Chip,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import { ref, update } from 'firebase/database';
 import { db } from '../services/firebase';
@@ -25,6 +30,7 @@ function QuestionForm({ room, roomCode, userId }) {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [poolCount, setPoolCount] = useState(0);
+  const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
 
   const isCurrentPlayer = room.currentPlayerId === userId;
   const currentPlayer = room.players[room.currentPlayerId];
@@ -105,13 +111,17 @@ function QuestionForm({ room, roomCode, userId }) {
     setLoading(false);
   };
 
-  const handleSkip = async () => {
+  const handleSkip = () => {
     // Check if skip is allowed (pool must have items)
     if (poolCount === 0) {
       console.log('[QuestionForm] Cannot skip - pool is empty');
       return;
     }
+    setSkipConfirmOpen(true);
+  };
 
+  const handleSkipConfirm = async () => {
+    setSkipConfirmOpen(false);
     setLoading(true);
     try {
       await skipQuestion(roomCode);
@@ -188,14 +198,6 @@ function QuestionForm({ room, roomCode, userId }) {
         />
         <Stack direction="row" spacing={2}>
           <Button
-            variant="contained"
-            fullWidth
-            onClick={handleSubmit}
-            disabled={loading || !content.trim()}
-          >
-            提交
-          </Button>
-          <Button
             variant="outlined"
             fullWidth
             onClick={handleSkip}
@@ -203,8 +205,28 @@ function QuestionForm({ room, roomCode, userId }) {
           >
             Skip
           </Button>
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleSubmit}
+            disabled={loading || !content.trim()}
+          >
+            提交
+          </Button>
         </Stack>
       </CardContent>
+      <Dialog open={skipConfirmOpen} onClose={() => setSkipConfirmOpen(false)}>
+        <DialogTitle>確定要 Skip 嗎？</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Skip 後將不會提交題目，確定要跳過這回合嗎？
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSkipConfirmOpen(false)}>取消</Button>
+          <Button onClick={handleSkipConfirm} variant="contained">確定 Skip</Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 }
